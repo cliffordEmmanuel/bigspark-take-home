@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# entire spark installation foler
+spark-3*/
+
+# entire data foler
+data/
+
+logs/
+
+.ipynb_checkpoints
+*.ipynb
+
+*.ini

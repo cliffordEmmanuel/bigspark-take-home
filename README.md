@@ -20,11 +20,6 @@ In this folder, there are the dag scripts used to realize the orchestrating of t
 
 In this folder are the spark jobs used.
 
-### Zeppelin
-
-In this folder are all the zeppelin notebooks used in process.
-
-
 # Tasks breakdown
 
 ## Basic Task
@@ -131,7 +126,7 @@ so it can be automatically refreshed when new data is added.
 The task was to redesign the problem as a batch scenario and simulate how it can be carried out.
 ### Setup
 
-- Used the same setup from the previous task.
+Used the same setup from the previous task.
 
 ### Task Steps
 
@@ -152,7 +147,7 @@ The format is as follows:
 batch_schema = {
     "<table-name>":{
         "schema":"the schema for the dataset is defined here",
-        "load":"specifies the loading strategy, could be either scd, append, truncate_load,
+        "load":"specifies the loading strategy, could be either scd, append, truncate_load",
         "primary_key":"primary key of the dataset, used for the scd implementation",
         "change_columns":"for specifying the columns from the data set where change will be tracked, for the scd implementation",
     },
