@@ -25,11 +25,11 @@ In this folder are the spark jobs used.
 In this folder are all the zeppelin notebooks used in process.
 
 
-## Tasks breakdown
+# Tasks breakdown
 
-### Basic Task
+## Basic Task
 
-#### Setup
+### Setup
 
 This can be broken down into the following:
 - Setup dev environment by installing spark and zeppelin notebook using the versions:
@@ -79,7 +79,7 @@ In the bashrc file add the variable defaults using the export command:
     _use the cmd: `jps` to view the jvm services started_
 
 
-#### Task Steps
+### Task Steps
 
 When the zeppelin server is started the UI will be rendered on the browser at localhost:8085 (using the port defined)
 Setup the spark interpreter:
