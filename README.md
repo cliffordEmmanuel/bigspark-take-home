@@ -16,9 +16,9 @@ The code structure is as follows:
 
 In this folder, there are the dag scripts used to realize the orchestrating of the 2 data engineering core tasks.
 
-### Spark
+### spark-app
 
-In this folder are the spark jobs that are responsible for the processing.
+In this folder are the spark jobs used.
 
 ### Zeppelin
 
