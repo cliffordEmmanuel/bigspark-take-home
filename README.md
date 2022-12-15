@@ -161,23 +161,22 @@ batch_schema = {
 
 - Deciding on the loading strategy:
 
-Of all the datasets, the ff observations were made which informed the loading strategy:
-
+For all the datasets, the ff observations were made which informed the loading strategy:
 1. 3 of the datasets didn't have any form of scd tracking for each batch namely:
     - customer
     - household_demographics
     - customer_address
 
-So Scd type 2 was implemented and 2 columns: *start_date*, and *end_date* were added to the table.
+    So Scd type 2 was implemented and 2 columns: *start_date*, and *end_date* were added to the table.
 
-2. 5 tables however had a *rec_start_date* `rec_end_date* indicating that some kind of scd was already done. So a truncate and load strategy was taken.
+2. 5 tables however had a *rec_start_date* `rec_end_date* indicating that some kind of scd was already  done. So a truncate and load strategy was taken.
     - date_dim
     - time_dim
     - item
     - store
     - promotion
 
-So one column: *batched_at* was added to show the current batch loaded.
+    So one column: *batched_at* was added to show the current batch loaded.
 
 3. For the store_sales which is the fact table and append loading strategy was used.
 
