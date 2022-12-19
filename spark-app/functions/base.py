@@ -4,8 +4,8 @@
 
 import os
 
-BATCH_DATA_SOURCE ='/home/clifford/side/projects/bigspark/data/tpcds_data_5g_batch'
-DATA_SOURCE = '/home/clifford/side/projects/bigspark/data'
+BATCH_DATA_SOURCE ='/home/clifford/side/projects/bigspark-take-home/data/tpcds_data_5g_batch'
+DATA_SOURCE = '/home/clifford/side/projects/bigspark-take-home/data'
 
 # ============================
 # setting up the db configs

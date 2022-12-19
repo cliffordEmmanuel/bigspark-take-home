@@ -148,8 +148,6 @@ batch_schema = {
     "<table-name>":{
         "schema":"the schema for the dataset is defined here",
         "load":"specifies the loading strategy, could be either scd, append, truncate_load",
-        "primary_key":"primary key of the dataset, used for the scd implementation",
-        "change_columns":"for specifying the columns from the data set where change will be tracked, for the scd implementation",
     },
 }
 ```
@@ -157,23 +155,18 @@ batch_schema = {
 - Deciding on the loading strategy:
 
 For all the datasets, the ff observations were made which informed the loading strategy:
-1. 3 of the datasets didn't have any form of scd tracking for each batch namely:
+1. For these datasets, every suceeding batch contained data from the previous batch, 
+hence a truncate and load strategy was used for each batch.
     - customer
     - household_demographics
     - customer_address
-
-    So Scd type 2 was implemented and 2 columns: *start_date*, and *end_date* were added to the table.
-
-2. 5 tables however had a *rec_start_date* `rec_end_date* indicating that some kind of scd was already  done. So a truncate and load strategy was taken.
     - date_dim
     - time_dim
     - item
     - store
     - promotion
 
-    So one column: *batched_at* was added to show the current batch loaded.
-
-3. For the store_sales which is the fact table and append loading strategy was used.
+2. For the store_sales which is the fact table and append loading strategy was used.
 
 
 - Created a pyspark script (spark-app/stretch_task5.py) that does the following:
@@ -188,7 +181,7 @@ For all the datasets, the ff observations were made which informed the loading s
 ### TODO and current limitations
 
 - The airflow job was designed to be triggered manually.
-- This design was highly tailored to having all the batched data present in the source folder, and may not generalized well when new batches are added. 
+- This design was highly tailored to having all the batched data present in the source folder, and may not generalized efficiently when new batches are added. 
     - However some checks were implemented to ensure that:
         - if the database has no tables created the first batch is carried out as a full load, 
         with the required columns created for each load strategy created as well.
@@ -197,4 +190,3 @@ For all the datasets, the ff observations were made which informed the loading s
                 - if the timestamp for the incoming batch is greater than the max batched_at loaded. 
                 - confirm check and load the new batch
             - if no new batch, do nothing and just exit.
-- The scd implementation, is resource heavy, and does the processing in memory, this may become an issue if the batch data grows, and more batches are added.

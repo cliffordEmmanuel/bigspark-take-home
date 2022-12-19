@@ -6,8 +6,6 @@ import os
 import sys
 
 
-
-
 from base import batch_params, batch_schema
 from functions.base import _get_batches_folders,_parse_contents,get_data_info
 
@@ -16,15 +14,14 @@ os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 
-BATCH_DATA_SOURCE ='/home/clifford/side/projects/bigspark/data/tpcds_data_5g_batch'
+BATCH_DATA_SOURCE ='/home/clifford/side/projects/bigspark-take-home/data/tpcds_data_5g_batch'
+
 
 # database configs
 
 USERNAME=batch_params['user']
 PASSWORD=batch_params['password']
 DATABASE=batch_params['database']
-
-
 
 BATCHES = _get_batches_folders(BATCH_DATA_SOURCE)
 FILES_META_DATA = _parse_contents(BATCHES)
@@ -64,6 +61,8 @@ def to_local_postgres(spark_df,table, mode='overwrite'):
         mode (str, optional): specifies whether data in the underlying table should 
                     be overwritten appended to. Defaults to 'overwrite'.
     """
+    print(f"Loading {spark_df.count()} records to {table} using {mode}!")
+
     spark_df.write.format("jdbc").options(
         url=f'jdbc:postgresql://localhost:5432/{DATABASE}',
         driver='org.postgresql.Driver',
@@ -71,7 +70,6 @@ def to_local_postgres(spark_df,table, mode='overwrite'):
         password=PASSWORD,
         dbtable=table,
     ).save(mode=mode)
-
 
 def from_local_postgres(table):
     """reads the data from the database table into a spark dataframe
@@ -89,67 +87,8 @@ def from_local_postgres(table):
                 user=USERNAME,
                 password=PASSWORD,
                 dbtable=table,
-            ).load()
-
-
-def scd2_load(source_df,target_df,primary_key,batched_at,change_cols):
-    """Implements a change data capture using scd type 2
-
-    Args:
-        source_df (_type_): contains the incoming dataset from source
-        target_df (_type_): contains the target dataset from the destination db
-        primary_key (_type_): the unique identifier of the dataset
-        batched_at (_type_): time stamp showing when the data was batched, this is extracted from folder name
-        change_cols (_type_): columns of the dataset where changes will be tracked
-
-    Returns:
-        _type_: a dataset with change tracking columns updated ie start_date, end_date
-    """
-
-
-    # let's use spark.sql for finding records that have changed.. based on the change columns...
-
-    source_df.createOrReplaceTempView("source")
-    target_df.createOrReplaceTempView("target")
-
-    # generating a dynamic join statement
-    joins = [f"(s.{x} == t.{x})" for x in change_cols]
-    join_clause= " and ".join(joins)
-
-    # looking for records that have changed between incoming and target data...
-    unchanged_records = spark.sql(f"select t.{primary_key} from target t inner join source s on {join_clause};")
-
-    # getting this into a list
-    unchanged_records = list(unchanged_records.select(col(primary_key)).toPandas()[primary_key])
-
-    # remove from source df records with ids in the unchanged_records
-    new_source_df = source_df.filter(~col(primary_key).isin(unchanged_records))
-
-    # new records 
-    new_records = list(new_source_df.select(col(primary_key)).toPandas()[primary_key])
-
-    # if no change is observed
-    if len(new_records) ==0:
-        print("no change observed!")
-        return None
-    else:
-        # create the two scd columns in the new source_df
-        # start date = current_batch date
-        new_source_df = new_source_df.withColumn('start_date',lit(batched_at)).withColumn('end_date',lit(None))
-
-        # type casting
-        new_source_df = new_source_df.withColumn('start_date',new_source_df.start_date.cast(DateType()))\
-                                        .withColumn('end_date',new_source_df.end_date.cast(DateType()))
-
-        # now creating a new dataset waiting to be loaded..
-        new_target_df = target_df.union(new_source_df)
-
-        # now let's update the end_date in the target_df in normal run end_date current_batch date.
-        updated_target_df = new_target_df.withColumn("end_date",when(col(primary_key).isin(new_records),lit(batched_at)).otherwise(lit(None)))
-
-        return updated_target_df
-
-
+            ).load()   
+       
 def batch_extract_and_load(batch:str, first_load:bool=False):
     """extract, transforms and loads all the files for a single batch load
 
@@ -157,7 +96,7 @@ def batch_extract_and_load(batch:str, first_load:bool=False):
         batch (str): name of batch folder
         first_load (bool, optional): flag that shows whether this is the first data load. Defaults to False.
     """
-
+    print("=======================================")
     print(f"Processing batch:{batch}")
     
     # getting the batched_timestamp
@@ -174,21 +113,13 @@ def batch_extract_and_load(batch:str, first_load:bool=False):
             path=data[1]
             schema=batch_schema[table]['schema']
             load=batch_schema[table]['load']
-            print(f"Processing data: {table} with {load}")
+            print(f"Processing data: {table}")
             # extract
             source_df = read_data_from_flat_file(path,schema)
 
             # transform
-
-            if load=='scd':
-                # for scd tables we need a start_date and end_date
-                source_df = source_df.withColumn('start_date',lit(batched_at))\
-                                        .withColumn('end_date',lit(None))
-                source_df = source_df.withColumn('start_date',source_df.start_date.cast(DateType()))\
-                                        .withColumn('end_date',source_df.end_date.cast(DateType()))
-            else:
-                source_df = source_df.withColumn('batched_at',lit(batched_at))
-                source_df = source_df.withColumn('batched_at',source_df.batched_at.cast(DateType()))
+            source_df = source_df.withColumn('batched_at',lit(batched_at))
+            source_df = source_df.withColumn('batched_at',source_df.batched_at.cast(DateType()))
 
             # load
             to_local_postgres(source_df,table)
@@ -205,23 +136,10 @@ def batch_extract_and_load(batch:str, first_load:bool=False):
 
             # extract
             source_df = read_data_from_flat_file(path,schema)
-            target_df = from_local_postgres(table)
 
             # transform and load
-            if load=='scd':
-                change_cols=batch_schema[table]['change_columns']
-                primary_key=batch_schema[table]['primary_key']
-
-                final_df = scd2_load(source_df, target_df, primary_key,batched_at,change_cols)
-                # TODO: current limitation means entire dataset will have to be 
-                # loaded and processed in memory for every new batch!!
-                if final_df == None:
-                    print("no change observed nothing to do here!!")
-                else:
-                    to_local_postgres(final_df,table)
-            elif load=='truncate_load':
+            if load=='truncate_load':
                 # simulate a truncate and load: by doing an overwrite
-                # indicating a batch load
                 source_df = source_df.withColumn('batched_at',lit(batched_at))
                 source_df = source_df.withColumn('batched_at',source_df.batched_at.cast(DateType()))
                 to_local_postgres(source_df,table)
@@ -267,7 +185,6 @@ def is_new_batch(batch):
 def main():
     """starts here!!!
     """
-    
 
     for batch in BATCHES:
         # checking if tables are present..
@@ -276,16 +193,16 @@ def main():
         if present==False:
             print('tables not present, so first load')
             batch_extract_and_load(batch, first_load=True)
-        
-        # making sure we don't repeat for already loaded data...
-        new_batch = is_new_batch(batch)
-        if new_batch == True:
-            # new batch found
-            print("new batch found")
-            batch_extract_and_load(batch, first_load=False)
         else:
-            # no new batch do nothing
-            print("no new batch!! do nothing")
+            # making sure we don't repeat for already loaded data...
+            new_batch = is_new_batch(batch)
+            if new_batch == True:
+                # new batch found
+                print("new batch found")
+                batch_extract_and_load(batch, first_load=False)
+            else:
+                # no new batch do nothing
+                print("batch already loaded do nothing")
         
         
 

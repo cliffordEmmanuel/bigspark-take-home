@@ -1,33 +1,14 @@
 # Would hide all the necessary variables, including the database credentials and schema for tables...
-from configparser import ConfigParser
-config = ConfigParser()	
+import yaml
 
+with open('/home/clifford/side/projects/bigspark-take-home/spark-app/config.yaml') as file:
+    config = yaml.safe_load(file)   
+    databaseConfig=config['db_connections']
+    # print(databaseConfig)
+    data_5g_params=databaseConfig['data_5g']
+    batch_params=databaseConfig['batch']
+    default_params=databaseConfig['default']
 
-# ===========================
-config.read('config.ini')
-data_5g_section=config["data_g"]
-data_5g_params={
-    "host":data_5g_section["host"],
-    "database":data_5g_section["database"],
-    "user":data_5g_section["user"],
-    "password":data_5g_section["password"],
-}
-
-batch_section=config["data_g"]
-batch_params={
-    "host":batch_section["host"],
-    "database":batch_section["database"],
-    "user":batch_section["user"],
-    "password":batch_section["password"],
-}
-
-default_section=config["default"]
-default_params={
-    "host":default_section["host"],
-    "database":default_section["database"],
-    "user":default_section["user"],
-    "password":default_section["password"],
-}
 # =======================================
 
 basic_schema = {
@@ -107,9 +88,7 @@ batch_schema = {
             c_email_address           string, 
             c_last_review_date        string
             """,
-        "load":"scd",
-        "primary_key":'c_customer_sk',
-        "change_columns":["c_salutation","c_first_name","c_preferred_cust_flag","c_login","c_email_address","c_last_review_date"],
+        "load":"truncate_load",
     },
     "customer_address":{
         "schema":"""ca_address_sk             int, 
@@ -126,9 +105,7 @@ batch_schema = {
             ca_gmt_offset             double, 
             ca_location_type          string
         """,
-        "load":"scd",
-        "primary_key":'ca_address_sk',
-        "change_columns":["ca_street_number","ca_street_name","ca_street_type","ca_suite_number","ca_city","ca_county","ca_state","ca_zip","ca_location_type","ca_gmt_offset"],
+        "load":"truncate_load",
     },
     "date_dim":{
         "schema":"""d_date_sk                 int,
@@ -161,8 +138,6 @@ batch_schema = {
             d_current_year            string
         """,
         "load":'truncate_load',
-        "primary_key":None,
-        "change_columns":None,
     },
     "household_demographics":{
         "schema":"""
@@ -172,9 +147,7 @@ batch_schema = {
             hd_dep_count              int,
             hd_vehicle_count          int
         """,
-        "load":"scd",
-        "primary_key":'hd_demo_sk',
-        "change_columns":["hd_income_band_sk","hd_buy_potential","hd_dep_count","hd_vehicle_count"],
+        "load":"truncate_load",
     },
     "item":{
         "schema":"""
@@ -202,8 +175,6 @@ batch_schema = {
             i_product_name            string
         """,
         "load":"truncate_load",
-        "primary_key":None,
-        "change_columns":None,
     },
     "promotion":{
         "schema":"""
@@ -228,8 +199,6 @@ batch_schema = {
             p_discount_active         string
         """,
         "load":"truncate_load",
-        "primary_key":None,
-        "change_columns":None,
     },
     "store":{
         "schema":"""
@@ -264,8 +233,6 @@ batch_schema = {
             s_tax_precentage          double
         """,
         "load":"truncate_load",
-        "primary_key":None,
-        "change_columns":None,
     },
     "store_sales":{
         "schema":"""
@@ -294,8 +261,6 @@ batch_schema = {
             ss_net_profit             double
         """,
         "load":"append",
-        "primary_key":None,
-        "change_columns":None
     },
     "time_dim":{
         "schema":"""
@@ -311,8 +276,6 @@ batch_schema = {
             t_meal_time               string
         """,
         "load":"truncate_load",
-        "primary_key":None,
-        "change_columns":None,
     },   
 }
     

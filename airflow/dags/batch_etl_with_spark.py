@@ -8,16 +8,13 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.sql import BranchSQLOperator
 
 from airflow import DAG, XComArg
-
 from datetime import datetime, timedelta
-
-
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
 db_conn = "local_postgres"
-app_home="/home/clifford/side/projects/bigspark/spark-app"
+app_home="/home/clifford/side/projects/bigspark-take-home/spark-app"
 db_name="batch"
 
 
@@ -51,15 +48,8 @@ with DAG(
     batch_load= SparkSubmitOperator(task_id='batch_load',
         conn_id='spark',
         application=f'{app_home}/stretch_task5.py',
-        # execution_timeout=timedelta(minutes=10),
         dag=dag
     ) 
-    batch_load.doc_md = dedent(
-        """\
-    #### Extract task
-    Testing out the ddls
-    """
-    )
 
 
     start >> batch_load >> end
